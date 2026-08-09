@@ -23,9 +23,9 @@ outputs:
   run-python:
     value: ${{ steps.plan.outputs.run-python }}
   run-shell:
-    value: ${{ steps.plan.outputs.run-shell }}
+    value: ${{ steps.groups.outputs.run-shell }}
   run-schema:
-    value: ${{ steps.plan.outputs.run-schema }}
+    value: ${{ steps.groups.outputs.run-schema }}
   run-security:
     value: ${{ steps.plan.outputs.run-security }}
   run-package:
@@ -65,3 +65,20 @@ runs:
           args+=(--base-ref "$JEP_BASE_REF")
         fi
         python "$JEP_ACTION_PATH/planner.py" "${args[@]}"
+
+    - id: groups
+      name: Derive extended gate groups
+      shell: bash
+      env:
+        GATES: ${{ steps.plan.outputs.selected-gates }}
+      run: |
+        set -euo pipefail
+        shell=false
+        schema=false
+        IFS=',' read -r -a gates <<< "$GATES"
+        for gate in "${gates[@]}"; do
+          [[ "$gate" == shell_* ]] && shell=true
+          [[ "$gate" == schema_* ]] && schema=true
+        done
+        echo "run-shell=$shell" >> "$GITHUB_OUTPUT"
+        echo "run-schema=$schema" >> "$GITHUB_OUTPUT"
