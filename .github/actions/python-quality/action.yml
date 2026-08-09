@@ -1,0 +1,62 @@
+name: JDS Python quality
+description: Run reusable Python setup and quality gates inside the caller job, preserving caller check names.
+
+inputs:
+  python-version:
+    description: Python version.
+    required: false
+    default: "3.12"
+  install-command:
+    description: Dependency/tool installation command.
+    required: false
+    default: ""
+  compile-command:
+    description: Compile/syntax command.
+    required: false
+    default: ""
+  lint-command:
+    description: Lint/format command.
+    required: false
+    default: ""
+  type-command:
+    description: Type-check command.
+    required: false
+    default: ""
+  test-command:
+    description: Unit/test command.
+    required: false
+    default: ""
+
+runs:
+  using: composite
+  steps:
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: ${{ inputs.python-version }}
+        cache: pip
+
+    - name: Install
+      if: ${{ inputs.install-command != '' }}
+      shell: bash
+      run: ${{ inputs.install-command }}
+
+    - name: Compile
+      if: ${{ inputs.compile-command != '' }}
+      shell: bash
+      run: ${{ inputs.compile-command }}
+
+    - name: Lint
+      if: ${{ inputs.lint-command != '' }}
+      shell: bash
+      run: ${{ inputs.lint-command }}
+
+    - name: Type check
+      if: ${{ inputs.type-command != '' }}
+      shell: bash
+      run: ${{ inputs.type-command }}
+
+    - name: Test
+      if: ${{ inputs.test-command != '' }}
+      shell: bash
+      run: ${{ inputs.test-command }}

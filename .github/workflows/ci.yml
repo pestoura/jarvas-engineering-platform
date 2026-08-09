@@ -40,7 +40,7 @@ jobs:
             'ruff>=0.9,<1'
 
       - name: Compile
-        run: python -m compileall .github/actions/plan tests
+        run: python -m compileall .github/actions tests
 
       - name: Ruff
         run: python -m ruff check .
@@ -96,6 +96,38 @@ jobs:
           assert 'secret_scan' in plan['selectedGates']
           print('JDS_ACTION_OUTPUT_OK', ','.join(plan['selectedGates']))
           PY
+
+  quality-actions-smoke:
+    name: composite quality actions
+    runs-on: ubuntu-latest
+    needs: quality
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Python composite
+        uses: ./.github/actions/python-quality
+        with:
+          python-version: "3.12"
+          install-command: >-
+            python -m pip install --disable-pip-version-check
+            'PyYAML>=6,<7' 'jsonschema>=4.20,<5' 'pytest>=8,<9' 'ruff>=0.9,<1'
+          compile-command: "python -m compileall .github/actions/plan tests"
+          lint-command: "python -m ruff check .github/actions/plan tests"
+          test-command: "python -m pytest -q"
+
+      - name: Shell composite
+        uses: ./.github/actions/shell-quality
+        with:
+          syntax-command: "bash -n -c 'echo ok'"
+          lint-command: "bash -n -c 'echo ok'"
+
+      - name: Schema composite
+        uses: ./.github/actions/schema-quality
+        with:
+          python-version: "3.12"
+          validate-command: "python -m json.tool schemas/project-engineering-profile.schema.json >/dev/null"
 
   secrets:
     name: secret scanning
