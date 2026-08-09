@@ -1,6 +1,5 @@
 from pathlib import Path
 
-
 PLATFORM_SHA = "9ee1147ea85bbb5bbb733d252bab9ccbb113f5ef"
 ROOT = Path(__file__).resolve().parents[1]
 
