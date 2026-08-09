@@ -1,0 +1,89 @@
+name: reusable / container assurance
+
+on:
+  workflow_call:
+    inputs:
+      image-name:
+        type: string
+        required: false
+        default: "candidate:ci"
+      context:
+        type: string
+        required: false
+        default: "."
+      dockerfile:
+        type: string
+        required: false
+        default: "Dockerfile"
+      acceptance-command:
+        type: string
+        required: false
+        default: ""
+      severity:
+        type: string
+        required: false
+        default: "CRITICAL,HIGH"
+
+permissions:
+  contents: read
+
+jobs:
+  assurance:
+    name: image / acceptance / trivy / sbom
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build image
+        shell: bash
+        run: |
+          set -euo pipefail
+          docker build \
+            --label "org.opencontainers.image.revision=${GITHUB_SHA}" \
+            --file "${{ inputs.dockerfile }}" \
+            --tag "${{ inputs.image-name }}" \
+            "${{ inputs.context }}"
+
+      - name: Isolated acceptance
+        if: ${{ inputs.acceptance-command != '' }}
+        shell: bash
+        run: ${{ inputs.acceptance-command }}
+
+      - name: Trivy image scan
+        uses: aquasecurity/trivy-action@v0.36.0
+        with:
+          image-ref: ${{ inputs.image-name }}
+          format: table
+          severity: ${{ inputs.severity }}
+          exit-code: '1'
+          ignore-unfixed: true
+
+      - name: Generate CycloneDX SBOM
+        uses: aquasecurity/trivy-action@v0.36.0
+        with:
+          image-ref: ${{ inputs.image-name }}
+          scan-type: image
+          format: cyclonedx
+          output: sbom-cyclonedx.json
+
+      - name: Validate SBOM
+        shell: bash
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          path = Path('sbom-cyclonedx.json')
+          assert path.is_file() and path.stat().st_size > 0
+          payload = json.loads(path.read_text(encoding='utf-8'))
+          assert payload.get('bomFormat') == 'CycloneDX'
+          assert isinstance(payload.get('components'), list)
+          print('JDS_SBOM_OK', len(payload['components']))
+          PY
+
+      - name: Retain supply-chain evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: jds-container-evidence-${{ github.sha }}
+          path: sbom-cyclonedx.json
+          if-no-files-found: error

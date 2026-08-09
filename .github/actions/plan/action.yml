@@ -1,0 +1,84 @@
+name: JDS-001 gate planner
+description: Validate a Jarvas engineering manifest and produce a capability/risk/change-aware gate plan.
+
+inputs:
+  manifest:
+    description: Path to the project engineering manifest in the caller repository.
+    required: false
+    default: .jarvas/engineering.yml
+  base-ref:
+    description: Optional git base ref/SHA used to derive changed files.
+    required: false
+    default: ""
+
+outputs:
+  plan-json:
+    description: Compact JSON effective plan.
+    value: ${{ steps.plan.outputs.plan-json }}
+  selected-gates:
+    description: Comma-separated selected gate identifiers.
+    value: ${{ steps.plan.outputs.selected-gates }}
+  run-docs:
+    value: ${{ steps.plan.outputs.run-docs }}
+  run-python:
+    value: ${{ steps.plan.outputs.run-python }}
+  run-shell:
+    value: ${{ steps.groups.outputs.run-shell }}
+  run-schema:
+    value: ${{ steps.groups.outputs.run-schema }}
+  run-security:
+    value: ${{ steps.plan.outputs.run-security }}
+  run-package:
+    value: ${{ steps.plan.outputs.run-package }}
+  run-container:
+    value: ${{ steps.plan.outputs.run-container }}
+  run-browser:
+    value: ${{ steps.plan.outputs.run-browser }}
+  run-lab:
+    value: ${{ steps.plan.outputs.run-lab }}
+  run-evidence:
+    value: ${{ steps.plan.outputs.run-evidence }}
+
+runs:
+  using: composite
+  steps:
+    - name: Install planner validation dependencies
+      shell: bash
+      run: python -m pip install --disable-pip-version-check 'PyYAML>=6,<7' 'jsonschema>=4.20,<5'
+
+    - id: plan
+      name: Build effective gate plan
+      shell: bash
+      env:
+        JEP_ACTION_PATH: ${{ github.action_path }}
+        JEP_MANIFEST: ${{ inputs.manifest }}
+        JEP_BASE_REF: ${{ inputs.base-ref }}
+      run: |
+        set -euo pipefail
+        args=(
+          --manifest "$JEP_MANIFEST"
+          --catalog "$JEP_ACTION_PATH/../../../catalog/capabilities.yml"
+          --schema "$JEP_ACTION_PATH/../../../schemas/project-engineering-profile.schema.json"
+          --github-output "$GITHUB_OUTPUT"
+        )
+        if [[ -n "$JEP_BASE_REF" ]]; then
+          args+=(--base-ref "$JEP_BASE_REF")
+        fi
+        python "$JEP_ACTION_PATH/planner.py" "${args[@]}"
+
+    - id: groups
+      name: Derive extended gate groups
+      shell: bash
+      env:
+        GATES: ${{ steps.plan.outputs.selected-gates }}
+      run: |
+        set -euo pipefail
+        shell=false
+        schema=false
+        IFS=',' read -r -a gates <<< "$GATES"
+        for gate in "${gates[@]}"; do
+          [[ "$gate" == shell_* ]] && shell=true
+          [[ "$gate" == schema_* ]] && schema=true
+        done
+        echo "run-shell=$shell" >> "$GITHUB_OUTPUT"
+        echo "run-schema=$schema" >> "$GITHUB_OUTPUT"

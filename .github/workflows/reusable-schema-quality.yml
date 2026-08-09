@@ -1,0 +1,41 @@
+name: reusable / schema quality
+
+on:
+  workflow_call:
+    inputs:
+      python-version:
+        type: string
+        required: false
+        default: "3.12"
+      install-command:
+        type: string
+        required: false
+        default: ""
+      validate-command:
+        type: string
+        required: true
+
+permissions:
+  contents: read
+
+jobs:
+  schema:
+    name: configuration / schema validation
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ inputs.python-version }}
+          cache: pip
+
+      - name: Install validators
+        if: ${{ inputs.install-command != '' }}
+        shell: bash
+        run: ${{ inputs.install-command }}
+
+      - name: Validate structured configuration
+        shell: bash
+        run: ${{ inputs.validate-command }}

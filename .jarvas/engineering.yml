@@ -1,0 +1,33 @@
+apiVersion: engineering.jarvas/v1
+kind: ProjectEngineeringProfile
+
+metadata:
+  name: jarvas-engineering-platform
+
+spec:
+  standard: JDS-1.0
+  platformRef: v0.1.0
+  criticality: high
+
+  detection:
+    enabled: true
+
+  preset:
+    name: python-service
+
+  capabilities:
+    add:
+      - docs.validate
+      - security.secret-scan
+      - release.evidence
+    remove: []
+
+  delivery:
+    releaseStrategy: versioned
+    liveAcceptance: not-applicable
+    requireEvidenceManifest: true
+
+  execution:
+    strategy: automation
+
+  overrides: {}
