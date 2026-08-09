@@ -6,7 +6,7 @@ metadata:
 
 spec:
   standard: JDS-1.0
-  platformRef: v0.1.0
+  platformRef: 9ee1147ea85bbb5bbb733d252bab9ccbb113f5ef
   criticality: medium
 
   detection:
