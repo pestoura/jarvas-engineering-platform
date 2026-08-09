@@ -14,6 +14,18 @@ capabilities:
     triggers: ["**/*.py", "pyproject.toml", "requirements*.txt", "tox.ini", "mypy.ini"]
     skipOnDocsOnly: true
 
+  shell.quality:
+    description: Shell syntax and ShellCheck gates.
+    gates: [shell_syntax, shell_lint]
+    triggers: ["**/*.sh", "scripts/**", "deploy/**"]
+    skipOnDocsOnly: true
+
+  config.schema:
+    description: Structured configuration and schema validation.
+    gates: [schema_validate]
+    triggers: ["schemas/**", "config/**", "**/*.json", "**/*.yaml", "**/*.yml", "**/*.toml"]
+    skipOnDocsOnly: true
+
   security.secret-scan:
     description: Repository secret invariant scanning.
     gates: [secret_scan]
@@ -92,15 +104,28 @@ presets:
     capabilities:
       - docs.validate
       - python.quality
+      - config.schema
       - security.secret-scan
       - security.sca
       - package.build
+      - release.evidence
+
+  operations-automation:
+    capabilities:
+      - docs.validate
+      - python.quality
+      - shell.quality
+      - config.schema
+      - security.secret-scan
+      - security.sca
       - release.evidence
 
   containerized-python:
     capabilities:
       - docs.validate
       - python.quality
+      - shell.quality
+      - config.schema
       - security.secret-scan
       - security.sca
       - package.build
@@ -114,6 +139,7 @@ presets:
     capabilities:
       - docs.validate
       - python.quality
+      - config.schema
       - security.secret-scan
       - security.sca
       - browser.playwright
@@ -123,6 +149,8 @@ presets:
     capabilities:
       - docs.validate
       - python.quality
+      - shell.quality
+      - config.schema
       - security.secret-scan
       - security.sca
       - security.sbom
