@@ -1,0 +1,128 @@
+apiVersion: engineering.jarvas/v1
+kind: EngineeringCapabilityCatalogue
+
+capabilities:
+  docs.validate:
+    description: Validate canonical documentation and lightweight contracts.
+    gates: [docs]
+    triggers: ["**/*.md", "docs/**", "*.md"]
+    skipOnDocsOnly: false
+
+  python.quality:
+    description: Python compile, lint, typing and test gates.
+    gates: [python_compile, python_lint, python_type, python_test]
+    triggers: ["**/*.py", "pyproject.toml", "requirements*.txt", "tox.ini", "mypy.ini"]
+    skipOnDocsOnly: true
+
+  security.secret-scan:
+    description: Repository secret invariant scanning.
+    gates: [secret_scan]
+    mandatory: true
+    triggers: ["**"]
+    skipOnDocsOnly: false
+
+  security.sca:
+    description: Dependency/software composition analysis.
+    gates: [sca]
+    triggers: ["pyproject.toml", "requirements*.txt", "package*.json", "poetry.lock", "uv.lock", "Pipfile*", "go.mod", "Cargo.lock"]
+    skipOnDocsOnly: true
+    minimumCriticality: high
+
+  security.sast:
+    description: Static application security analysis.
+    gates: [sast]
+    triggers: ["**/*.py", "**/*.js", "**/*.ts", "**/*.go", "**/*.rs", "src/**"]
+    skipOnDocsOnly: true
+    minimumCriticality: critical
+
+  package.build:
+    description: Build distributable package artifacts.
+    gates: [package]
+    triggers: ["src/**", "pyproject.toml", "setup.py", "setup.cfg"]
+    skipOnDocsOnly: true
+
+  container.build:
+    description: Build runtime container image.
+    gates: [container_build]
+    triggers: ["Dockerfile", "Dockerfile.*", "docker/**", "compose*.yml", "compose*.yaml"]
+    skipOnDocsOnly: true
+
+  security.container-scan:
+    description: Vulnerability scan of built container images.
+    gates: [container_scan]
+    dependsOn: [container.build]
+    triggers: ["Dockerfile", "Dockerfile.*", "docker/**", "compose*.yml", "compose*.yaml"]
+    skipOnDocsOnly: true
+
+  security.sbom:
+    description: Generate and validate software bill of materials.
+    gates: [sbom]
+    dependsOn: [container.build]
+    triggers: ["Dockerfile", "Dockerfile.*", "docker/**", "pyproject.toml", "requirements*.txt", "package*.json"]
+    skipOnDocsOnly: true
+
+  runtime.isolated-acceptance:
+    description: Controlled isolated runtime acceptance.
+    gates: [isolated_acceptance]
+    triggers: ["src/**", "Dockerfile", "Dockerfile.*", "docker/**", "compose*.yml", "compose*.yaml", "deploy/**"]
+    skipOnDocsOnly: true
+
+  browser.playwright:
+    description: Semantic browser/UI contract and controlled Playwright acceptance.
+    gates: [browser_contracts, browser_acceptance]
+    triggers: ["**/playwright/**", "playwright.config.*", "**/*ui_contract*", "**/*browser*", "src/**"]
+    skipOnDocsOnly: true
+
+  security.lab-runtime:
+    description: Security Lab isolation, readiness, execution/reset and host-safety gates.
+    gates: [lab_registry, lab_isolation, lab_runtime, lab_reset, host_safety]
+    triggers: ["platform/environments/**", "kali-mcp/**", "security/**", "compose*.yml", "compose*.yaml"]
+    skipOnDocsOnly: true
+
+  release.evidence:
+    description: Produce exact-SHA delivery evidence manifest.
+    gates: [evidence]
+    triggers: ["**"]
+    skipOnDocsOnly: false
+
+presets:
+  python-service:
+    capabilities:
+      - docs.validate
+      - python.quality
+      - security.secret-scan
+      - security.sca
+      - package.build
+      - release.evidence
+
+  containerized-python:
+    capabilities:
+      - docs.validate
+      - python.quality
+      - security.secret-scan
+      - security.sca
+      - package.build
+      - container.build
+      - security.container-scan
+      - security.sbom
+      - runtime.isolated-acceptance
+      - release.evidence
+
+  browser-automation:
+    capabilities:
+      - docs.validate
+      - python.quality
+      - security.secret-scan
+      - security.sca
+      - browser.playwright
+      - release.evidence
+
+  security-lab:
+    capabilities:
+      - docs.validate
+      - python.quality
+      - security.secret-scan
+      - security.sca
+      - security.sbom
+      - security.lab-runtime
+      - release.evidence
