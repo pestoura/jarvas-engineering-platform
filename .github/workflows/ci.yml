@@ -1,0 +1,109 @@
+name: CI
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: jep-ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  quality:
+    name: schema / lint / tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Install
+        run: |
+          python -m pip install --disable-pip-version-check -e '.[dev]'
+
+      - name: Compile
+        run: python -m compileall .github/actions/plan tests
+
+      - name: Ruff
+        run: python -m ruff check .
+
+      - name: Tests
+        run: python -m pytest -q
+
+      - name: Validate canonical manifest and planner output
+        run: |
+          python .github/actions/plan/planner.py \
+            --manifest .jarvas/engineering.yml \
+            --catalog catalog/capabilities.yml \
+            --schema schemas/project-engineering-profile.schema.json \
+            --changed-file docs/JDS-001.md \
+            --json-out /tmp/gate-plan.json
+          python - <<'PY'
+          import json
+          plan = json.load(open('/tmp/gate-plan.json', encoding='utf-8'))
+          assert 'secret_scan' in plan['selectedGates']
+          assert plan['standard'] == 'JDS-1.0'
+          print('JDS_PLANNER_CANONICAL_OK')
+          PY
+
+  action-smoke:
+    name: composite planner action
+    runs-on: ubuntu-latest
+    needs: quality
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - id: plan
+        name: Execute local planner action
+        uses: ./.github/actions/plan
+        with:
+          manifest: .jarvas/engineering.yml
+          base-ref: ${{ github.event.pull_request.base.sha || github.event.before }}
+
+      - name: Validate action outputs
+        env:
+          PLAN: ${{ steps.plan.outputs.plan-json }}
+          GATES: ${{ steps.plan.outputs.selected-gates }}
+        run: |
+          set -euo pipefail
+          test -n "$PLAN"
+          test -n "$GATES"
+          python - <<'PY'
+          import json, os
+          plan = json.loads(os.environ['PLAN'])
+          assert 'secret_scan' in plan['selectedGates']
+          print('JDS_ACTION_OUTPUT_OK', ','.join(plan['selectedGates']))
+          PY
+
+  secrets:
+    name: secret scanning
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Trivy secret scan
+        uses: aquasecurity/trivy-action@v0.36.0
+        with:
+          scan-type: fs
+          scan-ref: .
+          scanners: secret
+          exit-code: '1'
+          format: table
