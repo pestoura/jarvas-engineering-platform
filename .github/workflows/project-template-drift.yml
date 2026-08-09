@@ -1,0 +1,90 @@
+name: Project template drift
+
+on:
+  schedule:
+    - cron: '17 6 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+timeout-minutes: 5
+
+jobs:
+  drift:
+    name: Project template contract
+    runs-on: ubuntu-latest
+    env:
+      TEMPLATE_REPOSITORY_ID: '1328569712'
+      TARGET_TEMPLATE_NAME: pestoura/jarvas-project-template
+    steps:
+      - name: Checkout canonical platform
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+
+      - id: repo
+        name: Resolve template repository by stable ID
+        shell: bash
+        run: |
+          set -euo pipefail
+          payload="$(curl --fail --silent --show-error --location "https://api.github.com/repositories/${TEMPLATE_REPOSITORY_ID}")"
+          full_name="$(jq -r '.full_name' <<<"$payload")"
+          default_branch="$(jq -r '.default_branch' <<<"$payload")"
+          is_template="$(jq -r '.is_template // false' <<<"$payload")"
+          test -n "$full_name"
+          test -n "$default_branch"
+          printf 'full-name=%s\n' "$full_name" >> "$GITHUB_OUTPUT"
+          printf 'default-branch=%s\n' "$default_branch" >> "$GITHUB_OUTPUT"
+          printf 'is-template=%s\n' "$is_template" >> "$GITHUB_OUTPUT"
+
+      - name: Fetch template canonical files
+        env:
+          REPO: ${{ steps.repo.outputs.full-name }}
+          BRANCH: ${{ steps.repo.outputs.default-branch }}
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/project-template/.jarvas /tmp/project-template/.github/workflows
+          base="https://raw.githubusercontent.com/${REPO}/${BRANCH}"
+          curl --fail --silent --show-error --location "$base/README.md" -o /tmp/project-template/README.md
+          curl --fail --silent --show-error --location "$base/.jarvas/engineering.yml" -o /tmp/project-template/.jarvas/engineering.yml
+          curl --fail --silent --show-error --location "$base/.github/workflows/jds.yml" -o /tmp/project-template/.github/workflows/jds.yml
+
+      - name: Require canonical bootstrap parity
+        run: |
+          set -euo pipefail
+          cmp templates/fresh-repository/README.md /tmp/project-template/README.md
+          cmp templates/fresh-repository/.jarvas/engineering.yml /tmp/project-template/.jarvas/engineering.yml
+          cmp templates/fresh-repository/.github/workflows/jds.yml /tmp/project-template/.github/workflows/jds.yml
+
+      - name: Preserve universal technology-neutral boundary
+        env:
+          REPO: ${{ steps.repo.outputs.full-name }}
+          BRANCH: ${{ steps.repo.outputs.default-branch }}
+        run: |
+          set -euo pipefail
+          tree="$(curl --fail --silent --show-error --location "https://api.github.com/repos/${REPO}/git/trees/${BRANCH}?recursive=1")"
+          forbidden='^(pyproject\.toml|package\.json|package-lock\.json|pnpm-lock\.yaml|yarn\.lock|Dockerfile|docker-compose\.yml|compose\.yml|playwright\.config\.(ts|js)|Cargo\.toml|go\.mod|pom\.xml|build\.gradle|main\.tf)$'
+          if jq -r '.tree[].path' <<<"$tree" | grep -Eq "$forbidden"; then
+            echo 'Universal project template contains a technology-specific root artifact.' >&2
+            exit 1
+          fi
+
+      - name: Report one-time GitHub template setup
+        env:
+          REPO: ${{ steps.repo.outputs.full-name }}
+          IS_TEMPLATE: ${{ steps.repo.outputs.is-template }}
+        run: |
+          set -euo pipefail
+          {
+            echo '## Project template status'
+            echo
+            echo "Repository ID: \`${TEMPLATE_REPOSITORY_ID}\`"
+            echo "Current repository: \`${REPO}\`"
+            echo "GitHub Template Repository: \`${IS_TEMPLATE}\`"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+          if [[ "$REPO" != "$TARGET_TEMPLATE_NAME" || "$IS_TEMPLATE" != 'true' ]]; then
+            echo 'SETUP_PENDING: rename to pestoura/jarvas-project-template and enable Template repository in GitHub Settings.'
+            echo 'Canonical parity is GREEN; the one-time GitHub repository setting remains pending.' >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo 'TEMPLATE_REPOSITORY_READY' >> "$GITHUB_STEP_SUMMARY"
+          fi
