@@ -50,8 +50,7 @@ def repository_files(root: Path) -> list[str]:
         dirs[:] = [name for name in dirs if name not in SKIP_DIRS]
         current_path = Path(current)
         for name in names:
-            path = (current_path / name).relative_to(root).as_posix()
-            files.append(path)
+            files.append((current_path / name).relative_to(root).as_posix())
     return sorted(files)
 
 
@@ -76,9 +75,7 @@ def docs_only(paths: list[str]) -> bool:
         return False
     for path in paths:
         normalized = path.replace("\\", "/")
-        if normalized.endswith((".md", ".mdx", ".rst")):
-            continue
-        if normalized.startswith("docs/"):
+        if normalized.endswith((".md", ".mdx", ".rst")) or normalized.startswith("docs/"):
             continue
         return False
     return True
@@ -90,8 +87,7 @@ def dependency_closure(selected: set[str], capabilities: dict[str, Any]) -> set[
     while changed:
         changed = False
         for capability_id in tuple(resolved):
-            descriptor = capabilities[capability_id]
-            for dependency in descriptor.get("dependsOn", []):
+            for dependency in capabilities[capability_id].get("dependsOn", []):
                 if dependency not in capabilities:
                     raise ValueError(f"capability {capability_id} depends on unknown capability {dependency}")
                 if dependency not in resolved:
@@ -171,16 +167,14 @@ def build_plan(
     for capability_id in config.get("add", []):
         add(capability_id, "explicit-add")
 
-    detection_enabled = spec.get("detection", {}).get("enabled", True)
-    if detection_enabled:
+    if spec.get("detection", {}).get("enabled", True):
         for capability_id, descriptor in capabilities.items():
             if capability_id in effective:
                 continue
             if any(matches(path, descriptor["triggers"]) for path in repo_files):
                 add(capability_id, "auto-detected")
 
-    requested_remove = set(config.get("remove", []))
-    for capability_id in requested_remove:
+    for capability_id in set(config.get("remove", [])):
         if capability_id not in capabilities:
             raise ValueError(f"cannot remove unknown capability: {capability_id}")
         descriptor = capabilities[capability_id]
@@ -193,20 +187,25 @@ def build_plan(
             effective.discard(capability_id)
             reasons.setdefault(capability_id, []).append("explicit-remove")
 
+    before_dependencies = set(effective)
     effective = dependency_closure(effective, capabilities)
-    for capability_id in effective:
-        reasons.setdefault(capability_id, []).append("dependency-closure" if capability_id not in reasons else "effective")
+    for capability_id in effective - before_dependencies:
+        reasons.setdefault(capability_id, []).append("dependency-closure")
 
     is_docs_only = docs_only(changed_files)
     per_capability_match = {
         capability_id: any(matches(path, capabilities[capability_id]["triggers"]) for path in changed_files)
         for capability_id in effective
     }
-    any_nonmandatory_match = any(
-        matched and not capabilities[capability_id].get("mandatory", False)
+    classification_match = any(
+        matched
+        and capabilities[capability_id].get("classificationTrigger", True)
+        and not capabilities[capability_id].get("mandatory", False)
         for capability_id, matched in per_capability_match.items()
     )
-    ambiguous = change_source == "unavailable" or (bool(changed_files) and not is_docs_only and not any_nonmandatory_match)
+    ambiguous = change_source == "unavailable" or (
+        bool(changed_files) and not is_docs_only and not classification_match
+    )
 
     selected: set[str] = set()
     skipped: dict[str, str] = {}
@@ -228,9 +227,11 @@ def build_plan(
             skipped[capability_id] = "change-impact-not-triggered"
 
     selected = dependency_closure(selected, capabilities)
-    selected_gates = sorted({gate for capability_id in selected for gate in capabilities[capability_id]["gates"]})
+    selected_gates = sorted(
+        {gate for capability_id in selected for gate in capabilities[capability_id]["gates"]}
+    )
 
-    plan: dict[str, Any] = {
+    return {
         "schema": "engineering.jarvas/gate-plan-v1",
         "standard": spec["standard"],
         "platformRef": spec["platformRef"],
@@ -245,11 +246,12 @@ def build_plan(
         "skippedCapabilities": skipped,
         "capabilityReasons": {key: sorted(set(value)) for key, value in sorted(reasons.items())},
     }
-    return plan
 
 
 def group_output(gates: list[str], prefixes: tuple[str, ...]) -> str:
-    return "true" if any(any(gate == prefix or gate.startswith(prefix) for prefix in prefixes) for gate in gates) else "false"
+    return "true" if any(
+        any(gate == prefix or gate.startswith(prefix) for prefix in prefixes) for gate in gates
+    ) else "false"
 
 
 def emit_github_output(path: Path, plan: dict[str, Any]) -> None:
