@@ -1,0 +1,29 @@
+apiVersion: engineering.jarvas/v1
+kind: ProjectEngineeringProfile
+
+metadata:
+  name: PROJECT_NAME
+
+spec:
+  standard: JDS-1.0
+  platformRef: 9ee1147ea85bbb5bbb733d252bab9ccbb113f5ef
+  criticality: low
+
+  detection:
+    enabled: false
+
+  capabilities:
+    add:
+      - security.secret-scan
+      - release.evidence
+    remove: []
+
+  delivery:
+    releaseStrategy: manual
+    liveAcceptance: not-applicable
+    requireEvidenceManifest: true
+
+  execution:
+    strategy: unspecified
+
+  overrides: {}
