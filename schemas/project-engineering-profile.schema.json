@@ -1,0 +1,67 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://engineering.jarvas/schemas/project-engineering-profile-v1.json",
+  "title": "Jarvas Project Engineering Profile",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["apiVersion", "kind", "metadata", "spec"],
+  "properties": {
+    "apiVersion": {"const": "engineering.jarvas/v1"},
+    "kind": {"const": "ProjectEngineeringProfile"},
+    "metadata": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name"],
+      "properties": {
+        "name": {"type": "string", "minLength": 1, "pattern": "^[a-zA-Z0-9._-]+$"}
+      }
+    },
+    "spec": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["standard", "platformRef", "criticality", "capabilities", "delivery"],
+      "properties": {
+        "standard": {"type": "string", "pattern": "^JDS-1(?:\\.[0-9]+)?$"},
+        "platformRef": {"type": "string", "minLength": 1},
+        "criticality": {"enum": ["low", "medium", "high", "critical"]},
+        "detection": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {"enabled": {"type": "boolean"}},
+          "default": {"enabled": true}
+        },
+        "preset": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["name"],
+          "properties": {"name": {"type": "string", "minLength": 1}}
+        },
+        "capabilities": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["add", "remove"],
+          "properties": {
+            "add": {"type": "array", "uniqueItems": true, "items": {"type": "string", "minLength": 1}},
+            "remove": {"type": "array", "uniqueItems": true, "items": {"type": "string", "minLength": 1}}
+          }
+        },
+        "delivery": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["releaseStrategy", "liveAcceptance", "requireEvidenceManifest"],
+          "properties": {
+            "releaseStrategy": {"enum": ["versioned", "continuous", "manual", "not-applicable"]},
+            "liveAcceptance": {"enum": ["required", "conditional", "not-applicable"]},
+            "requireEvidenceManifest": {"type": "boolean"}
+          }
+        },
+        "execution": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {"strategy": {"type": "string", "minLength": 1}}
+        },
+        "overrides": {"type": "object"}
+      }
+    }
+  }
+}
