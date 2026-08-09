@@ -8,12 +8,11 @@ on:
 permissions:
   contents: read
 
-timeout-minutes: 5
-
 jobs:
   drift:
     name: Project template contract
     runs-on: ubuntu-latest
+    timeout-minutes: 5
     env:
       TEMPLATE_REPOSITORY_ID: '1328569712'
       TARGET_TEMPLATE_NAME: pestoura/jarvas-project-template
