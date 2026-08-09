@@ -10,17 +10,31 @@ The public layer must contain only reusable engineering logic, schemas, standard
 
 Consumers must pin a release tag or immutable SHA. Do not consume mutable `main`.
 
-Preferred after the first accepted release:
+Current accepted baseline:
 
-```yaml
-uses: pestoura/jarvas-engineering-platform/.github/actions/plan@v0.1.0
+```text
+9ee1147ea85bbb5bbb733d252bab9ccbb113f5ef
 ```
 
-For higher assurance, pin the exact commit SHA.
+Until a human-readable release tag exists, examples and templates use that immutable SHA. After the first accepted tag is created, consumers may move through a normal validated upgrade PR.
 
-## Project manifest
+## Fresh repositories
 
-Create `.jarvas/engineering.yml` from `examples/engineering.yml` and declare:
+Creating a repository with GitHub's generic **New repository** flow creates an empty repository. GitHub does not automatically copy JDS files from this repository.
+
+A fresh repository must therefore be initialized from `templates/fresh-repository/` (manually or by an automation/controller). The fresh baseline deliberately starts with only:
+
+- JDS manifest validation/planning;
+- mandatory repository security/secret scanning;
+- exact-SHA delivery evidence.
+
+Project-type detection is initially disabled so a brand-new repository does not claim or execute Python, Shell, container, browser or schema capabilities before corresponding project structure exists. When implementation begins, enable detection and/or declare the appropriate preset/capabilities in a normal PR.
+
+## Mature repositories
+
+For an existing project, create `.jarvas/engineering.yml` from `examples/engineering.yml` and adopt reusable workflows or check-name-preserving composite actions incrementally. Do not retire established project-local gates until central parity is proven.
+
+The manifest declares:
 
 - JDS version;
 - platform version;
