@@ -1,0 +1,33 @@
+name: JDS schema quality
+description: Run reusable structured configuration validation inside the caller job, preserving caller check names.
+
+inputs:
+  python-version:
+    description: Python version used by validators.
+    required: false
+    default: "3.12"
+  install-command:
+    description: Validator installation command.
+    required: false
+    default: ""
+  validate-command:
+    description: Structured configuration validation command.
+    required: true
+
+runs:
+  using: composite
+  steps:
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: ${{ inputs.python-version }}
+        cache: pip
+
+    - name: Install validators
+      if: ${{ inputs.install-command != '' }}
+      shell: bash
+      run: ${{ inputs.install-command }}
+
+    - name: Validate structured configuration
+      shell: bash
+      run: ${{ inputs.validate-command }}
