@@ -22,6 +22,10 @@ outputs:
     value: ${{ steps.plan.outputs.run-docs }}
   run-python:
     value: ${{ steps.plan.outputs.run-python }}
+  run-shell:
+    value: ${{ steps.plan.outputs.run-shell }}
+  run-schema:
+    value: ${{ steps.plan.outputs.run-schema }}
   run-security:
     value: ${{ steps.plan.outputs.run-security }}
   run-package:
