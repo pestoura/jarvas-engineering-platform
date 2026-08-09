@@ -1,0 +1,34 @@
+name: reusable / docs quality
+
+on:
+  workflow_call:
+    inputs:
+      validate-command:
+        type: string
+        required: false
+        default: ""
+      link-command:
+        type: string
+        required: false
+        default: ""
+
+permissions:
+  contents: read
+
+jobs:
+  docs:
+    name: docs quality
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Markdown and canonical docs validation
+        if: ${{ inputs.validate-command != '' }}
+        shell: bash
+        run: ${{ inputs.validate-command }}
+
+      - name: Link / diagram validation
+        if: ${{ inputs.link-command != '' }}
+        shell: bash
+        run: ${{ inputs.link-command }}
