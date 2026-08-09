@@ -68,6 +68,8 @@ Catch-all controls such as secret scanning and release evidence do **not** count
 Initial reusable primitives:
 
 - `reusable-python-quality.yml`
+- `reusable-shell-quality.yml`
+- `reusable-schema-quality.yml`
 - `reusable-docs-quality.yml`
 - `reusable-repository-security.yml`
 - `reusable-container-assurance.yml`
@@ -76,6 +78,8 @@ Browser, Security Lab and product-specific live acceptance remain project-contro
 
 ## Consumption
 
+The reusable layer is public so both public and private Jarvas/Hermes repositories can consume it without exposing project secrets or private runtime policy.
+
 Consumers must pin a release tag or immutable SHA. See `docs/consuming-the-platform.md` and `templates/consumer-ci.yml`.
 
-The first release target is `v0.1.0`, followed by an additive pilot in a private Jarvas/Hermes repository before any local mature gates are retired.
+The first release target is `v0.1.0`, followed by additive parity pilots before any mature project-local gate is retired.
