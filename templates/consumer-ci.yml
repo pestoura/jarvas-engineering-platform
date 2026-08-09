@@ -1,0 +1,91 @@
+name: JDS CI
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  plan:
+    name: JDS effective plan
+    runs-on: ubuntu-latest
+    outputs:
+      plan-json: ${{ steps.plan.outputs.plan-json }}
+      selected-gates: ${{ steps.plan.outputs.selected-gates }}
+      run-docs: ${{ steps.plan.outputs.run-docs }}
+      run-python: ${{ steps.plan.outputs.run-python }}
+      run-security: ${{ steps.plan.outputs.run-security }}
+      run-package: ${{ steps.plan.outputs.run-package }}
+      run-container: ${{ steps.plan.outputs.run-container }}
+      run-browser: ${{ steps.plan.outputs.run-browser }}
+      run-lab: ${{ steps.plan.outputs.run-lab }}
+      run-evidence: ${{ steps.plan.outputs.run-evidence }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - id: plan
+        uses: pestoura/jarvas-engineering-platform/.github/actions/plan@v0.1.0
+        with:
+          manifest: .jarvas/engineering.yml
+          base-ref: ${{ github.event.pull_request.base.sha || github.event.before }}
+
+  docs:
+    needs: plan
+    if: ${{ needs.plan.outputs.run-docs == 'true' }}
+    uses: pestoura/jarvas-engineering-platform/.github/workflows/reusable-docs-quality.yml@v0.1.0
+    with:
+      validate-command: "python scripts/validate_docs.py"
+
+  python:
+    needs: plan
+    if: ${{ needs.plan.outputs.run-python == 'true' }}
+    uses: pestoura/jarvas-engineering-platform/.github/workflows/reusable-python-quality.yml@v0.1.0
+    with:
+      python-version: "3.12"
+      install-command: "python -m pip install -e '.[dev]'"
+      compile-command: "python -m compileall src tests"
+      lint-command: "python -m ruff check ."
+      type-command: "python -m mypy src"
+      test-command: "python -m pytest -q"
+
+  security:
+    needs: plan
+    if: ${{ needs.plan.outputs.run-security == 'true' }}
+    uses: pestoura/jarvas-engineering-platform/.github/workflows/reusable-repository-security.yml@v0.1.0
+
+  fast-gate:
+    name: selected fast gates
+    runs-on: ubuntu-latest
+    if: ${{ always() }}
+    needs: [plan, docs, python, security]
+    steps:
+      - name: Require selected prerequisites to be green or intentionally skipped
+        env:
+          PLAN_RESULT: ${{ needs.plan.result }}
+          DOCS_RESULT: ${{ needs.docs.result }}
+          PYTHON_RESULT: ${{ needs.python.result }}
+          SECURITY_RESULT: ${{ needs.security.result }}
+        run: |
+          set -euo pipefail
+          test "$PLAN_RESULT" = success
+          for result in "$DOCS_RESULT" "$PYTHON_RESULT" "$SECURITY_RESULT"; do
+            [[ "$result" == success || "$result" == skipped ]]
+          done
+
+  container:
+    needs: [plan, fast-gate]
+    if: ${{ needs.fast-gate.result == 'success' && needs.plan.outputs.run-container == 'true' }}
+    uses: pestoura/jarvas-engineering-platform/.github/workflows/reusable-container-assurance.yml@v0.1.0
+    with:
+      image-name: "candidate:ci"
+      dockerfile: "Dockerfile"
+      context: "."
+
+# Browser, lab and project-specific live acceptance remain project-controlled
+# until reusable contracts for those capabilities have proven parity in pilots.
