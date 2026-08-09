@@ -1,0 +1,86 @@
+apiVersion: engineering.jarvas/v1
+kind: ReleaseMaintenancePolicy
+standard: JDS-002
+version: "1.0"
+
+principles:
+  immutableAcceptedRelease: true
+  repositoryCapabilityIsNotLiveSupport: true
+  validationCreatesCanonicalChangeRecords: true
+  ambiguousChangeFailsClosed: true
+  deferredImprovementDoesNotBlockReleaseByDefault: true
+
+releaseLifecycle:
+  candidatePattern: "<major>.<minor>.<patch>-rc.<n>"
+  acceptedPattern: "<major>.<minor>.<patch>"
+  acceptedReleaseMutable: false
+  requireNewCandidateAfterFunctionalChange: true
+
+classifications:
+  HOTFIX:
+    defaultVersionEffect: PATCH
+    defaultDisposition: FIX_NOW
+    gates: [reproduce, targeted_test, affected_regression, security_baseline, artifact, rollback, runtime_smoke]
+  BUGFIX:
+    defaultVersionEffect: PATCH_OR_RC_INCREMENT
+    defaultDisposition: FIX_NOW
+    gates: [reproduce, targeted_test, affected_regression, full_regression, security_baseline]
+  HARDENING:
+    defaultVersionEffect: PATCH_OR_MINOR
+    defaultDisposition: FIX_NOW
+    gates: [targeted_test, affected_regression, security_baseline, assurance]
+  IMPROVEMENT:
+    defaultVersionEffect: MINOR_OR_RC_INCREMENT
+    defaultDisposition: DEFER_IF_NON_BLOCKING
+    gates: [requirements, targeted_test, affected_regression, compatibility]
+  COMPATIBILITY:
+    defaultVersionEffect: PATCH_OR_MINOR
+    defaultDisposition: FIX_NOW
+    gates: [targeted_test, affected_regression, compatibility]
+  SECURITY_FIX:
+    defaultVersionEffect: PATCH_OR_RC_INCREMENT
+    defaultDisposition: FIX_NOW
+    gates: [negative_security_test, targeted_test, full_regression, security_full, artifact, rollback]
+  BREAKING_CHANGE:
+    defaultVersionEffect: MAJOR
+    defaultDisposition: DEFER_IF_OUTSIDE_RELEASE
+    gates: [requirements, migration_plan, full_regression, security_full, compatibility, artifact, rollback]
+  DOC_ONLY:
+    defaultVersionEffect: NONE
+    defaultDisposition: FIX_NOW
+    gates: [docs, links, secret_scan]
+
+changeStates:
+  - DISCOVERED
+  - TRIAGED
+  - IMPLEMENTING
+  - VALIDATING
+  - ACCEPTED
+  - PROMOTED
+  - LIVE_VERIFIED
+  - CLOSED
+  - BLOCKED
+  - REJECTED
+  - SUPERSEDED
+  - ROLLED_BACK
+
+dispositions:
+  - FIX_NOW
+  - DEFER
+  - REJECT
+
+branching:
+  default:
+    strategy: trunk_plus_short_lived_change_branches
+    pattern: "<classification-lower>/<change-id>-<slug>"
+  releaseBranch:
+    createOnlyWhenMultipleSupportedReleaseLinesExist: true
+    pattern: "release/<major>.<minor>"
+    requireForwardPortToMain: true
+
+validationCampaign:
+  observationsAreAppendOnly: true
+  failedObservationMustCreateOrLinkChangeRecord: true
+  passingCampaignCannotContainOpenRequiredFailure: true
+  promotionRequiresExactCandidateIdentity: true
+  promotionEvidenceMustBindCommitOrArtifactDigest: true
