@@ -1,0 +1,67 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://jarvas.local/schemas/validation-campaign.schema.json",
+  "title": "JDS-002 Validation Campaign",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "kind",
+    "id",
+    "product",
+    "objective",
+    "state",
+    "candidate",
+    "environment",
+    "observations",
+    "promotionRecommendation",
+    "timestamps"
+  ],
+  "properties": {
+    "schemaVersion": {"const": "jds.validation/v1"},
+    "kind": {"const": "ValidationCampaign"},
+    "id": {"type": "string", "pattern": "^VAL-[A-Z0-9][A-Z0-9-]{2,80}$"},
+    "product": {"type": "string", "minLength": 1, "maxLength": 120},
+    "objective": {"type": "string", "minLength": 1, "maxLength": 500},
+    "state": {"enum": ["PLANNED", "RUNNING", "BLOCKED", "PASSED", "FAILED", "CLOSED"]},
+    "candidate": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["version", "commit"],
+      "properties": {
+        "version": {"type": "string", "minLength": 1, "maxLength": 80},
+        "commit": {"type": "string", "pattern": "^[0-9a-f]{40}$"},
+        "artifactDigest": {"type": ["string", "null"], "pattern": "^sha256:[0-9a-f]{64}$"}
+      }
+    },
+    "environment": {"type": "string", "minLength": 1, "maxLength": 160},
+    "observations": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "required", "result", "status", "summary"],
+        "properties": {
+          "id": {"type": "string", "pattern": "^OBS-[A-Z0-9][A-Z0-9-]{1,80}$"},
+          "required": {"type": "boolean"},
+          "result": {"enum": ["PASS", "FAIL", "WARNING", "BLOCKED"]},
+          "status": {"enum": ["OPEN", "RESOLVED", "ACCEPTED_RISK", "DEFERRED"]},
+          "summary": {"type": "string", "minLength": 1, "maxLength": 500},
+          "changeRecord": {"type": ["string", "null"], "pattern": "^CHG-[A-Z0-9][A-Z0-9-]{2,80}$"},
+          "evidence": {"type": ["string", "null"], "maxLength": 500}
+        }
+      }
+    },
+    "promotionRecommendation": {"enum": ["NOT_READY", "ACCEPT", "HOLD", "REJECT"]},
+    "timestamps": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["startedAt", "updatedAt"],
+      "properties": {
+        "startedAt": {"type": "string", "format": "date-time"},
+        "updatedAt": {"type": "string", "format": "date-time"},
+        "closedAt": {"type": ["string", "null"], "format": "date-time"}
+      }
+    }
+  }
+}
