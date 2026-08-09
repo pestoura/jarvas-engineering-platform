@@ -1,0 +1,25 @@
+name: JDS Shell quality
+description: Run reusable Shell syntax and lint gates inside the caller job, preserving caller check names.
+
+inputs:
+  syntax-command:
+    description: Shell syntax command.
+    required: false
+    default: ""
+  lint-command:
+    description: Shell lint command.
+    required: false
+    default: ""
+
+runs:
+  using: composite
+  steps:
+    - name: Bash syntax
+      if: ${{ inputs.syntax-command != '' }}
+      shell: bash
+      run: ${{ inputs.syntax-command }}
+
+    - name: ShellCheck
+      if: ${{ inputs.lint-command != '' }}
+      shell: bash
+      run: ${{ inputs.lint-command }}
