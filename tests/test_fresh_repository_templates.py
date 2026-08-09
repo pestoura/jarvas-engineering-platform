@@ -8,11 +8,14 @@ def test_fresh_repository_template_is_self_consistent() -> None:
     manifest = (ROOT / "templates/fresh-repository/.jarvas/engineering.yml").read_text(
         encoding="utf-8"
     )
+    readme = (ROOT / "templates/fresh-repository/README.md").read_text(encoding="utf-8")
     workflow = (ROOT / "templates/fresh-repository/.github/workflows/jds.yml").read_text(
         encoding="utf-8"
     )
 
-    assert "name: PROJECT_NAME" in manifest
+    assert "name: AUTO" in manifest
+    assert "PROJECT_NAME" not in manifest
+    assert "PROJECT_NAME" not in readme
     assert f"platformRef: {PLATFORM_SHA}" in manifest
     assert "enabled: false" in manifest
     assert "security.secret-scan" in manifest

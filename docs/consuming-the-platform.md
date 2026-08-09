@@ -20,15 +20,17 @@ Until a human-readable release tag exists, examples and templates use that immut
 
 ## Fresh repositories
 
+For new projects, the preferred path is the dedicated GitHub Template Repository documented in [`project-template-repository.md`](project-template-repository.md), expected as `pestoura/jarvas-project-template`.
+
 Creating a repository with GitHub's generic **New repository** flow creates an empty repository. GitHub does not automatically copy JDS files from this repository.
 
-A fresh repository must therefore be initialized from `templates/fresh-repository/` (manually or by an automation/controller). The fresh baseline deliberately starts with only:
+A fresh repository must therefore be created through **Use this template** or initialized from `templates/fresh-repository/` by an automation/controller. The fresh baseline deliberately starts with only:
 
 - JDS manifest validation/planning;
 - mandatory repository security/secret scanning;
 - exact-SHA delivery evidence.
 
-Project-type detection is initially disabled so a brand-new repository does not claim or execute Python, Shell, container, browser or schema capabilities before corresponding project structure exists. When implementation begins, enable detection and/or declare the appropriate preset/capabilities in a normal PR.
+Project-type detection is initially disabled so a brand-new repository does not claim or execute Python, Shell, container, browser or schema capabilities before corresponding project structure exists. The template manifest uses `metadata.name: AUTO` because GitHub does not substitute the target repository name into copied files. When implementation begins, enable detection and/or declare the appropriate preset/capabilities in a normal PR.
 
 ## Mature repositories
 

@@ -2,7 +2,7 @@ apiVersion: engineering.jarvas/v1
 kind: ProjectEngineeringProfile
 
 metadata:
-  name: PROJECT_NAME
+  name: AUTO
 
 spec:
   standard: JDS-1.0
