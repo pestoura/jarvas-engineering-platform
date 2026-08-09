@@ -5,8 +5,9 @@ import fnmatch
 import json
 import os
 import subprocess
+from collections.abc import Iterable
 from pathlib import Path
-from typing import Any, Iterable
+from typing import Any
 
 import jsonschema
 import yaml
