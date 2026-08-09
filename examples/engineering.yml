@@ -1,0 +1,32 @@
+apiVersion: engineering.jarvas/v1
+kind: ProjectEngineeringProfile
+
+metadata:
+  name: example-project
+
+spec:
+  standard: JDS-1.0
+  platformRef: v0.1.0
+  criticality: medium
+
+  detection:
+    enabled: true
+
+  # Optional shortcut. Remove the preset entirely for direct capability composition.
+  preset:
+    name: python-service
+
+  capabilities:
+    add:
+      - security.secret-scan
+    remove: []
+
+  delivery:
+    releaseStrategy: versioned
+    liveAcceptance: conditional
+    requireEvidenceManifest: true
+
+  execution:
+    strategy: unspecified
+
+  overrides: {}
