@@ -1,0 +1,34 @@
+schemaVersion: jds.change/v1
+kind: ChangeRecord
+id: CHG-BRIDGE-001
+product: hermes-mcp-bridge
+classification: BUGFIX
+state: VALIDATING
+disposition: FIX_NOW
+summary: Approval replay loses the original request binding.
+source:
+  type: VALIDATION_CAMPAIGN
+  campaign: VAL-BRIDGE-2-0-GA
+  observation: OBS-003
+  reference: null
+affectedRelease: 2.0.0-rc.1
+targetRelease: 2.0.0-rc.2
+risk: MEDIUM
+versionEffect: RC_INCREMENT
+branch: bugfix/CHG-BRIDGE-001-approval-binding
+issue: null
+pr: null
+validation:
+  targeted: PASS
+  regression: PASS
+  security: PASS
+  runtime: NOT_RUN
+promotion:
+  commit: null
+  artifactDigest: null
+  previousRelease: 2.0.0-rc.1
+deferredTo: null
+timestamps:
+  discoveredAt: '2026-08-09T20:00:00Z'
+  updatedAt: '2026-08-09T20:30:00Z'
+  closedAt: null
