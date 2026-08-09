@@ -1,0 +1,69 @@
+name: reusable / python quality
+
+on:
+  workflow_call:
+    inputs:
+      python-version:
+        type: string
+        required: false
+        default: "3.12"
+      install-command:
+        type: string
+        required: false
+        default: "python -m pip install -e '.[dev]'"
+      compile-command:
+        type: string
+        required: false
+        default: "python -m compileall src tests"
+      lint-command:
+        type: string
+        required: false
+        default: "python -m ruff check ."
+      type-command:
+        type: string
+        required: false
+        default: ""
+      test-command:
+        type: string
+        required: false
+        default: "python -m pytest -q"
+
+permissions:
+  contents: read
+
+jobs:
+  quality:
+    name: python quality
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ inputs.python-version }}
+          cache: pip
+
+      - name: Install
+        shell: bash
+        run: ${{ inputs.install-command }}
+
+      - name: Compile
+        if: ${{ inputs.compile-command != '' }}
+        shell: bash
+        run: ${{ inputs.compile-command }}
+
+      - name: Lint
+        if: ${{ inputs.lint-command != '' }}
+        shell: bash
+        run: ${{ inputs.lint-command }}
+
+      - name: Type check
+        if: ${{ inputs.type-command != '' }}
+        shell: bash
+        run: ${{ inputs.type-command }}
+
+      - name: Test
+        if: ${{ inputs.test-command != '' }}
+        shell: bash
+        run: ${{ inputs.test-command }}
