@@ -19,6 +19,7 @@ capabilities:
     gates: [secret_scan]
     mandatory: true
     triggers: ["**"]
+    classificationTrigger: false
     skipOnDocsOnly: false
 
   security.sca:
@@ -83,6 +84,7 @@ capabilities:
     description: Produce exact-SHA delivery evidence manifest.
     gates: [evidence]
     triggers: ["**"]
+    classificationTrigger: false
     skipOnDocsOnly: false
 
 presets:
