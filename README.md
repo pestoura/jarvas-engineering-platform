@@ -1,6 +1,6 @@
 # Jarvas Engineering Platform
 
-Central engineering standards, capability catalogue, gate planner and reusable GitHub Actions workflows for the Jarvas/Hermes portfolio.
+Central engineering standards, capability catalogue, gate planner and reusable GitHub Actions building blocks for the Jarvas/Hermes portfolio.
 
 ## JDS-001
 
@@ -30,22 +30,23 @@ Core properties:
 - unknown/ambiguous change impact fails safe to the full applicable plan;
 - bounded WIP replaces mandatory lane counts;
 - the Integration Controller is a role, not an agent requirement;
-- central workflows are version-pinned by consumers;
+- central building blocks are version-pinned by consumers;
 - project-local gates remain until central parity is proven;
 - skipped gates are explicit and auditable.
 
 ## Repository layout
 
 ```text
-.jarvas/engineering.yml                 self-hosted platform manifest
-catalog/capabilities.yml                capabilities + optional presets
-schemas/                                manifest contracts
-docs/JDS-001.md                         canonical delivery standard
-docs/gate-selection.md                  capability/risk/change selection model
-.github/actions/plan/                    executable gate planner action
-.github/workflows/reusable-*.yml         reusable quality/security/assurance jobs
-templates/consumer-ci.yml                reference consumer orchestration
-tests/                                  policy/planner regression tests
+.jarvas/engineering.yml                  self-hosted platform manifest
+catalog/capabilities.yml                 capabilities + optional presets
+schemas/                                 manifest contracts
+docs/JDS-001.md                          canonical delivery standard
+docs/gate-selection.md                   capability/risk/change selection model
+.github/actions/plan/                     executable gate planner action
+.github/actions/*-quality/                check-name-preserving composite actions
+.github/workflows/reusable-*.yml          reusable quality/security/assurance jobs
+templates/consumer-ci.yml                 reference consumer orchestration
+tests/                                   policy/planner regression tests
 ```
 
 ## Gate planner
@@ -65,7 +66,7 @@ Catch-all controls such as secret scanning and release evidence do **not** count
 
 ## Reusable workflows
 
-Initial reusable primitives:
+Reusable workflow primitives are intended for new repositories and callers that do not need to preserve an established job/check-name surface:
 
 - `reusable-python-quality.yml`
 - `reusable-shell-quality.yml`
@@ -74,7 +75,17 @@ Initial reusable primitives:
 - `reusable-repository-security.yml`
 - `reusable-container-assurance.yml`
 
-Browser, Security Lab and product-specific live acceptance remain project-controlled until central implementations demonstrate parity.
+## Composite migration actions
+
+Mature repositories may need to centralize implementation without changing established required-check names. For that migration path the platform also exposes composite actions that execute inside the caller's existing job:
+
+- `.github/actions/python-quality`
+- `.github/actions/shell-quality`
+- `.github/actions/schema-quality`
+
+This allows a job such as `Python 3.12` to keep the same external check name while moving its generic setup/compile/lint/type/test implementation into the central platform.
+
+Project-specific acceptance, secret policy, destructive/runtime gates and other controls remain local until an explicit central equivalent proves parity.
 
 ## Consumption
 
@@ -82,4 +93,4 @@ The reusable layer is public so both public and private Jarvas/Hermes repositori
 
 Consumers must pin a release tag or immutable SHA. See `docs/consuming-the-platform.md` and `templates/consumer-ci.yml`.
 
-The first release target is `v0.1.0`, followed by additive parity pilots before any mature project-local gate is retired.
+The accepted initial baseline is currently identified by immutable SHA until a release tag is created through an authorized tag/release path. Additive parity remains mandatory before a mature project-local gate is retired.
