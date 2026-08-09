@@ -32,7 +32,7 @@ jobs:
         with:
           fetch-depth: 0
       - id: plan
-        uses: pestoura/jarvas-engineering-platform/.github/actions/plan@v0.1.0
+        uses: pestoura/jarvas-engineering-platform/.github/actions/plan@9ee1147ea85bbb5bbb733d252bab9ccbb113f5ef
         with:
           manifest: .jarvas/engineering.yml
           base-ref: ${{ github.event.pull_request.base.sha || github.event.before }}
@@ -40,14 +40,14 @@ jobs:
   docs:
     needs: plan
     if: ${{ needs.plan.outputs.run-docs == 'true' }}
-    uses: pestoura/jarvas-engineering-platform/.github/workflows/reusable-docs-quality.yml@v0.1.0
+    uses: pestoura/jarvas-engineering-platform/.github/workflows/reusable-docs-quality.yml@9ee1147ea85bbb5bbb733d252bab9ccbb113f5ef
     with:
       validate-command: "python scripts/validate_docs.py"
 
   python:
     needs: plan
     if: ${{ needs.plan.outputs.run-python == 'true' }}
-    uses: pestoura/jarvas-engineering-platform/.github/workflows/reusable-python-quality.yml@v0.1.0
+    uses: pestoura/jarvas-engineering-platform/.github/workflows/reusable-python-quality.yml@9ee1147ea85bbb5bbb733d252bab9ccbb113f5ef
     with:
       python-version: "3.12"
       install-command: "python -m pip install -e '.[dev]'"
@@ -59,12 +59,12 @@ jobs:
   shell:
     needs: plan
     if: ${{ needs.plan.outputs.run-shell == 'true' }}
-    uses: pestoura/jarvas-engineering-platform/.github/workflows/reusable-shell-quality.yml@v0.1.0
+    uses: pestoura/jarvas-engineering-platform/.github/workflows/reusable-shell-quality.yml@9ee1147ea85bbb5bbb733d252bab9ccbb113f5ef
 
   schema:
     needs: plan
     if: ${{ needs.plan.outputs.run-schema == 'true' }}
-    uses: pestoura/jarvas-engineering-platform/.github/workflows/reusable-schema-quality.yml@v0.1.0
+    uses: pestoura/jarvas-engineering-platform/.github/workflows/reusable-schema-quality.yml@9ee1147ea85bbb5bbb733d252bab9ccbb113f5ef
     with:
       install-command: "python -m pip install jsonschema PyYAML"
       validate-command: "python scripts/validate_schemas.py"
@@ -72,7 +72,7 @@ jobs:
   security:
     needs: plan
     if: ${{ needs.plan.outputs.run-security == 'true' }}
-    uses: pestoura/jarvas-engineering-platform/.github/workflows/reusable-repository-security.yml@v0.1.0
+    uses: pestoura/jarvas-engineering-platform/.github/workflows/reusable-repository-security.yml@9ee1147ea85bbb5bbb733d252bab9ccbb113f5ef
 
   fast-gate:
     name: selected fast gates
@@ -98,7 +98,7 @@ jobs:
   container:
     needs: [plan, fast-gate]
     if: ${{ needs.fast-gate.result == 'success' && needs.plan.outputs.run-container == 'true' }}
-    uses: pestoura/jarvas-engineering-platform/.github/workflows/reusable-container-assurance.yml@v0.1.0
+    uses: pestoura/jarvas-engineering-platform/.github/workflows/reusable-container-assurance.yml@9ee1147ea85bbb5bbb733d252bab9ccbb113f5ef
     with:
       image-name: "candidate:ci"
       dockerfile: "Dockerfile"

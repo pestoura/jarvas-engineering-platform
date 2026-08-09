@@ -1,0 +1,101 @@
+name: JDS baseline
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: jds-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  plan:
+    name: JDS effective plan
+    runs-on: ubuntu-latest
+    outputs:
+      plan-json: ${{ steps.plan.outputs.plan-json }}
+      run-security: ${{ steps.plan.outputs.run-security }}
+      run-evidence: ${{ steps.plan.outputs.run-evidence }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - id: plan
+        uses: pestoura/jarvas-engineering-platform/.github/actions/plan@9ee1147ea85bbb5bbb733d252bab9ccbb113f5ef
+        with:
+          manifest: .jarvas/engineering.yml
+          base-ref: ${{ github.event.pull_request.base.sha || github.event.before }}
+      - name: Persist gate plan
+        env:
+          PLAN: ${{ steps.plan.outputs.plan-json }}
+        run: |
+          test -n "$PLAN"
+          printf '%s\n' "$PLAN" > jds-gate-plan.json
+      - uses: actions/upload-artifact@v4
+        with:
+          name: jds-gate-plan-${{ github.sha }}
+          path: jds-gate-plan.json
+          if-no-files-found: error
+
+  security:
+    needs: plan
+    if: ${{ needs.plan.outputs.run-security == 'true' }}
+    uses: pestoura/jarvas-engineering-platform/.github/workflows/reusable-repository-security.yml@9ee1147ea85bbb5bbb733d252bab9ccbb113f5ef
+
+  evidence:
+    name: JDS delivery evidence
+    needs: plan
+    if: ${{ always() && needs.plan.result == 'success' && needs.plan.outputs.run-evidence == 'true' }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Build evidence manifest
+        env:
+          PLAN: ${{ needs.plan.outputs.plan-json }}
+        run: |
+          python - <<'PY'
+          import json
+          import os
+          from pathlib import Path
+
+          plan = json.loads(os.environ['PLAN'])
+          evidence = {
+              'schema': 'engineering.jarvas/evidence-v1',
+              'repository': '${{ github.repository }}',
+              'sha': '${{ github.sha }}',
+              'ref': '${{ github.ref }}',
+              'runId': '${{ github.run_id }}',
+              'plan': plan,
+          }
+          Path('jds-evidence.json').write_text(
+              json.dumps(evidence, indent=2, sort_keys=True) + '\n',
+              encoding='utf-8',
+          )
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: jds-evidence-${{ github.sha }}
+          path: jds-evidence.json
+          if-no-files-found: error
+
+  gate:
+    name: JDS baseline gate
+    if: ${{ always() }}
+    needs: [plan, security, evidence]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Require selected gates to pass
+        env:
+          PLAN_RESULT: ${{ needs.plan.result }}
+          SECURITY_RESULT: ${{ needs.security.result }}
+          EVIDENCE_RESULT: ${{ needs.evidence.result }}
+        run: |
+          set -euo pipefail
+          test "$PLAN_RESULT" = success
+          [[ "$SECURITY_RESULT" == success || "$SECURITY_RESULT" == skipped ]]
+          [[ "$EVIDENCE_RESULT" == success || "$EVIDENCE_RESULT" == skipped ]]
