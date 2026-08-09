@@ -19,6 +19,8 @@ jobs:
       selected-gates: ${{ steps.plan.outputs.selected-gates }}
       run-docs: ${{ steps.plan.outputs.run-docs }}
       run-python: ${{ steps.plan.outputs.run-python }}
+      run-shell: ${{ steps.plan.outputs.run-shell }}
+      run-schema: ${{ steps.plan.outputs.run-schema }}
       run-security: ${{ steps.plan.outputs.run-security }}
       run-package: ${{ steps.plan.outputs.run-package }}
       run-container: ${{ steps.plan.outputs.run-container }}
@@ -54,6 +56,19 @@ jobs:
       type-command: "python -m mypy src"
       test-command: "python -m pytest -q"
 
+  shell:
+    needs: plan
+    if: ${{ needs.plan.outputs.run-shell == 'true' }}
+    uses: pestoura/jarvas-engineering-platform/.github/workflows/reusable-shell-quality.yml@v0.1.0
+
+  schema:
+    needs: plan
+    if: ${{ needs.plan.outputs.run-schema == 'true' }}
+    uses: pestoura/jarvas-engineering-platform/.github/workflows/reusable-schema-quality.yml@v0.1.0
+    with:
+      install-command: "python -m pip install jsonschema PyYAML"
+      validate-command: "python scripts/validate_schemas.py"
+
   security:
     needs: plan
     if: ${{ needs.plan.outputs.run-security == 'true' }}
@@ -63,18 +78,20 @@ jobs:
     name: selected fast gates
     runs-on: ubuntu-latest
     if: ${{ always() }}
-    needs: [plan, docs, python, security]
+    needs: [plan, docs, python, shell, schema, security]
     steps:
       - name: Require selected prerequisites to be green or intentionally skipped
         env:
           PLAN_RESULT: ${{ needs.plan.result }}
           DOCS_RESULT: ${{ needs.docs.result }}
           PYTHON_RESULT: ${{ needs.python.result }}
+          SHELL_RESULT: ${{ needs.shell.result }}
+          SCHEMA_RESULT: ${{ needs.schema.result }}
           SECURITY_RESULT: ${{ needs.security.result }}
         run: |
           set -euo pipefail
           test "$PLAN_RESULT" = success
-          for result in "$DOCS_RESULT" "$PYTHON_RESULT" "$SECURITY_RESULT"; do
+          for result in "$DOCS_RESULT" "$PYTHON_RESULT" "$SHELL_RESULT" "$SCHEMA_RESULT" "$SECURITY_RESULT"; do
             [[ "$result" == success || "$result" == skipped ]]
           done
 
