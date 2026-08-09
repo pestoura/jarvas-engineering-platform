@@ -1,0 +1,31 @@
+schemaVersion: jds.validation/v1
+kind: ValidationCampaign
+id: VAL-BRIDGE-2-0-GA
+product: hermes-mcp-bridge
+objective: Validate Bridge 2.0 candidate for GA promotion.
+state: RUNNING
+candidate:
+  version: 2.0.0-rc.2
+  commit: '1111111111111111111111111111111111111111'
+  artifactDigest: null
+environment: isolated acceptance + Hermes staging
+observations:
+  - id: OBS-001
+    required: true
+    result: PASS
+    status: RESOLVED
+    summary: V1 compatibility preserved.
+    changeRecord: null
+    evidence: gate:v1-contract
+  - id: OBS-003
+    required: true
+    result: FAIL
+    status: RESOLVED
+    summary: Approval replay binding defect found and corrected.
+    changeRecord: CHG-BRIDGE-001
+    evidence: retest:PASS
+promotionRecommendation: NOT_READY
+timestamps:
+  startedAt: '2026-08-09T19:00:00Z'
+  updatedAt: '2026-08-09T20:30:00Z'
+  closedAt: null
